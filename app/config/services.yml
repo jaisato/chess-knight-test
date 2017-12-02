@@ -29,7 +29,20 @@ services:
         public: true
         tags: ['controller.service_arguments']
 
-    # add more services, or override services that need manual wiring
-    # ChessBundle\Service\ExampleService:
-    #     arguments:
-    #         $someArgument: 'some_value'
+    chess.infrastructure.domain.event.knight.print_new_shortest_path_listener:
+        class: Chess\Infrastructure\Domain\Event\Knight\PrintNewShortestPathFoundListener
+        tags:
+            - { name: kernel.event_listener, event: Chess\Domain\Event\Knight\NewShortestPathFound, method: handle }
+
+    chess.application.knight.get_minimum_number_of_moves:
+        class: Chess\Application\Knight\GetMinimumNumberOfMovesService
+        arguments:
+            - Chess\Infrastructure\Persistence\InMemory\Knight\InMemoryKnightRepository
+            - Chess\Infrastructure\Persistence\InMemory\Board\InMemoryBoardRepository
+            - event_dispatcher
+
+    chess.infrastructure.ui.web.controller.knight_shortest_path:
+        class: Chess\Infrastructure\UI\Web\Controller\KnightController
+        arguments:
+            - chess.application.knight.get_minimum_number_of_moves
+            - templating

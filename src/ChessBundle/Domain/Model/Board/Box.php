@@ -65,6 +65,7 @@ class Box
      * @param int $yPosition Y-axis position.
      *
      * @return Box
+     * @throws InvalidBoxException
      */
     public static function createFromXYPosition(int $xPosition, int $yPosition)
     {
@@ -129,7 +130,7 @@ class Box
      */
     public function equalsTo(Box $aBox)
     {
-        return $this->x === $aBox->getX() && $this->y === $aBox->getY();
+        return $this->x == $aBox->getX() && $this->y == $aBox->getY();
     }
 
     /**

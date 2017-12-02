@@ -2,10 +2,13 @@
 
 namespace Chess\Domain\Model\Knight;
 
-use Chess\Application\Knight\KnightMovesDto;
+use Chess\Domain\Event\Knight\NewShortestPathFound;
 use Chess\Domain\Model\Board\BoardId;
 use Chess\Domain\Model\Board\BoardRepository;
 use Chess\Domain\Model\Board\Box;
+use Chess\Domain\Model\Board\InvalidBoxException;
+use Chess\Domain\Model\Board\NotFoundBoardException;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Knight's domain service to get the valid moves from source to destination.
@@ -20,40 +23,64 @@ class GetMovesFromSourceToDestination
     /** @var BoardRepository */
     private $boardRepository;
 
-    /** @var array|null */
-    private $solution;
+    /** @var EventDispatcherInterface */
+    private $eventDispatcher;
+
+    /**
+     * Optimal solution.
+     *
+     * @var array|null
+     */
+    private $optimalSolution;
+
+    /**
+     * List of visited position on current solution.
+     *
+     * @var array
+     */
+    private $visited = [];
 
     /**
      * GetNumberOfMovesFromSourceToDestination constructor.
      *
      * @param KnightRepository $knightRepository Knight repository.
-     * @param BoardRepository  $boardRepository  Board repository.
+     * @param BoardRepository $boardRepository Board repository.
+     * @param EventDispatcherInterface $eventDispatcher
      */
-    public function __construct(KnightRepository $knightRepository, BoardRepository $boardRepository)
-    {
+    public function __construct(
+        KnightRepository $knightRepository,
+        BoardRepository $boardRepository,
+        EventDispatcherInterface $eventDispatcher
+    ) {
         $this->knightRepository = $knightRepository;
         $this->boardRepository = $boardRepository;
-        $this->solution = null;
+        $this->eventDispatcher = $eventDispatcher;
+
+        $this->optimalSolution = null;
+        $this->visited = [];
     }
 
     /**
      * Calculate the number of knight moves from source box to destination box on chessboard.
      *
-     * @param BoardId  $boardId     Board id.
-     * @param KnightId $knightId    Knight id.
-     * @param Box      $source      Source board box.
-     * @param Box      $destination Destination board box.
-     * @param array    $solution    Current solution.
+     * @param BoardId $boardId Board id.
+     * @param KnightId $knightId Knight id.
+     * @param Box $source Source board box.
+     * @param Box $destination Destination board box.
+     * @param array $solution Current solution.
      *
      * @return bool
+     *
+     * @throws NotFoundKnightException
+     * @throws InvalidBoxException
+     * @throws NotFoundBoardException
      */
     public function execute(BoardId $boardId, KnightId $knightId, Box $source, Box $destination, array $solution): bool
     {
         $board = $this->boardRepository->ofIdOrFail($boardId);
         $knight = $this->knightRepository->ofIdOrFail($knightId);
 
-        $board->putAt($knight, $source);
-        $solution = $this->addToSolution($solution, $source);
+        $this->addToVisited($source);
 
         if (!$this->canBeOptimal($solution)) {
             return false;
@@ -65,17 +92,21 @@ class GetMovesFromSourceToDestination
         }
 
         foreach (Knight::getMoves() as $knightMove) {
-            if ($board->checkCanMove($knight, $knightMove) && !$this->visited($solution, $source, $knightMove)) {
-                $board->moveTo($knight, $knightMove);
-                $currentPosition = $board->getPosition($knight);
-                $solutionCopy = $solution;
-                $this->execute($boardId, $knightId, $currentPosition, $destination, $solutionCopy);
-            }
-
             $board->putAt($knight, $source);
+
+            if ($board->checkCanMove($knight, $knightMove) && !$this->isVisited($source, $knightMove)) {
+                $board->moveTo($knight, $knightMove);
+
+                $currentPosition = $board->getPosition($knight);
+                $solutionCopy = $this->addToSolution($solution, $currentPosition);
+                $this->addToVisited($currentPosition);
+
+                $this->execute($boardId, $knightId, $currentPosition, $destination, $solutionCopy);
+
+                $this->removeFromVisited($currentPosition);
+            }
         }
 
-        $this->removeFromSolution($solution, $source);
         return false;
     }
 
@@ -86,26 +117,28 @@ class GetMovesFromSourceToDestination
      */
     public function getMoves()
     {
-        return $this->solution;
+        return $this->optimalSolution;
     }
 
     /**
      * Checks if box position already visited at given path.
      *
-     * @param array $solution   Current solution.
-     * @param Box   $source     Source position.
-     * @param Move  $knightMove Knight move.
+     * @param Box $source Source position.
+     * @param Move $knightMove Knight move.
      *
      * @return bool
+     *
+     * @throws InvalidBoxException
      */
-    private function visited(array $solution, Box $source, Move $knightMove)
+    private function isVisited(Box $source, Move $knightMove)
     {
         $checkingBox = Box::createFromXYPosition(
             $source->getX() + $knightMove->getX(),
             $source->getY() + $knightMove->getY()
         );
 
-        foreach ($solution as $box) {
+        reset($this->visited);
+        foreach ($this->visited as $box) {
             if ($checkingBox->equalsTo($box)) {
                 return true;
             }
@@ -115,22 +148,29 @@ class GetMovesFromSourceToDestination
     }
 
     /**
-     * Removes position from current solution.
+     * Add position to list of visited.
      *
-     * @param array $solution Current solution.
-     * @param Box   $position Position to remove.
-     *
-     * @return array
+     * @param Box $position Visited position
      */
-    private function removeFromSolution(array $solution, Box $position)
+    private function addToVisited(Box $position)
     {
-        foreach ($solution as $index => $box) {
-            if ($position->equalsTo($box)) {
-                unset($solution[$index]);
+        $this->visited[] = $position;
+    }
+
+    /**
+     * Removes position from list of visited.
+     *
+     * @param Box $position Position to remove from visited.
+     */
+    private function removeFromVisited(Box $position)
+    {
+        reset($this->visited);
+
+        foreach ($this->visited as $index => $visitedBox) {
+            if ($visitedBox->equalsTo($position)) {
+                unset($this->visited[$index]);
             }
         }
-
-        return $solution;
     }
 
     /**
@@ -158,9 +198,9 @@ class GetMovesFromSourceToDestination
      */
     private function checkSolution(array $solution, KnightId $knightId, Box $source, Box $destination)
     {
-        if ($this->solution === null || count($this->solution) > $solution) {
-            $this->solution = $solution;
-            $this->printSolution($knightId, $source, $destination, $solution);
+        if ($this->canBeOptimal($solution)) {
+            $this->optimalSolution = $solution;
+            $this->publishNewSolution($knightId, $source, $destination, $solution);
         }
     }
 
@@ -173,30 +213,22 @@ class GetMovesFromSourceToDestination
      */
     private function canBeOptimal(array $solution)
     {
-        return $this->solution === null || count($this->solution) > count($solution);
+        return $this->optimalSolution === null || count($this->optimalSolution) > count($solution);
     }
 
     /**
-     * TODO: it shows every found solution (it's provisional because algorithm takes a long time).
-     * Prints the new current optimal solution.
+     * Publish event new shortest path solution.
      *
      * @param KnightId $knightId    Knight id.
      * @param Box      $source      Source position
      * @param Box      $destination Destination position
      * @param array    $solution    New optimal solution
      */
-    private function printSolution(KnightId $knightId, Box $source, Box $destination, array $solution)
+    private function publishNewSolution(KnightId $knightId, Box $source, Box $destination, array $solution)
     {
-        $output = fopen('php://output', 'w');
-        if (ob_get_level() == 0)
-            ob_start();
-
-        fwrite($output, (new KnightMovesDto($knightId, $source, $destination, $solution))->serialize() . "<br>");
-
-        ob_flush();
-        flush();
-
-        pclose($output);
-        ob_end_flush();
+        $this->eventDispatcher->dispatch(
+            NewShortestPathFound::class,
+            new NewShortestPathFound($knightId, $source, $destination, $solution)
+        );
     }
 }

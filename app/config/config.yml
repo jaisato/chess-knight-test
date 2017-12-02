@@ -37,6 +37,9 @@ framework:
 twig:
     debug: '%kernel.debug%'
     strict_variables: '%kernel.debug%'
+    paths:
+        '%kernel.project_dir%/src/ChessBundle/Infrastructure/UI/Web/Resources/views': web_views
+
 
 # Knight Configuration
 doctrine:

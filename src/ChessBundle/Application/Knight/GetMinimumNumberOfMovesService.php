@@ -9,6 +9,7 @@ use Chess\Domain\Model\Board\BoardId;
 use Chess\Domain\Model\Board\BoardRepository;
 use Chess\Domain\Model\Board\Box;
 use Chess\Domain\Model\Board\InvalidBoardIdException;
+use Chess\Domain\Model\Board\InvalidBoxException;
 use Chess\Domain\Model\Board\NotFoundBoardException;
 use Chess\Domain\Model\Knight\GetMovesFromSourceToDestination;
 use Chess\Domain\Model\Knight\InvalidKnightIdException;
@@ -16,9 +17,10 @@ use Chess\Domain\Model\Knight\Knight;
 use Chess\Domain\Model\Knight\KnightId;
 use Chess\Domain\Model\Knight\KnightRepository;
 use Chess\Domain\Model\Knight\NotFoundKnightException;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Application service to retrieve the minimum number of knight's moves.
+ * Domain service to retrieve the minimum number of knight's moves.
  */
 class GetMinimumNumberOfMovesService
 {
@@ -33,15 +35,25 @@ class GetMinimumNumberOfMovesService
     private $boardRepository;
 
     /**
+     * @var EventDispatcherInterface
+     */
+    private $eventDispatcher;
+
+    /**
      * GetMinimumNumberOfMovesService constructor.
      *
-     * @param KnightRepository $knightRepository Knight repository.
-     * @param BoardRepository  $boardRepository  Board repository.
+     * @param KnightRepository          $knightRepository Knight repository.
+     * @param BoardRepository           $boardRepository  Board repository.
+     * @param EventDispatcherInterface  $eventDispatcher  Event dispatcher.
      */
-    public function __construct(KnightRepository $knightRepository, BoardRepository $boardRepository)
-    {
+    public function __construct(
+        KnightRepository $knightRepository,
+        BoardRepository $boardRepository,
+        EventDispatcherInterface $eventDispatcher
+    ) {
         $this->knightRepository = $knightRepository;
         $this->boardRepository = $boardRepository;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -66,13 +78,18 @@ class GetMinimumNumberOfMovesService
         }
 
         try {
-            $getMovesService = new GetMovesFromSourceToDestination($this->knightRepository, $this->boardRepository);
+            $getMovesService = new GetMovesFromSourceToDestination(
+                $this->knightRepository,
+                $this->boardRepository,
+                $this->eventDispatcher
+            );
+
             $getMovesService->execute($boardId, $knightId, $sourceBox, $destinationBox, []);
         } catch (NotFoundBoardException|NotFoundKnightException $exception) {
             throw new ApplicationException("Board or knight not found", $exception->getCode(), $exception);
+        } catch (InvalidBoxException $exception) {
+            throw new ApplicationException("Board box is invalid", $exception->getCode(), $exception);
         }
-
-        echo "<h1>Solution: </h1><br>";
         
         return new KnightMovesDto(
             $knightId,
@@ -89,6 +106,8 @@ class GetMinimumNumberOfMovesService
      * @param null|string $boardId Board id.
      *
      * @return BoardId
+     *
+     * @throws InvalidBoardIdException
      */
     private function getBoardId(?string $boardId): BoardId
     {
@@ -107,6 +126,8 @@ class GetMinimumNumberOfMovesService
      * @param null|string $knightId Knight.
      *
      * @return KnightId
+     *
+     * @throws InvalidKnightIdException
      */
     private function getKnightId(?string $knightId): KnightId
     {

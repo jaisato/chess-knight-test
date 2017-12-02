@@ -17,11 +17,10 @@ class Move
     /**
      * Move constructor.
      *
-     * @param int $source      Source board box.
+     * @param int $source Source board box.
      * @param int $destination Destination board box.
      *
      * @throws InvalidMoveException
-     * @throws InvalidBoxException
      */
     public function __construct(int $source, int $destination)
     {

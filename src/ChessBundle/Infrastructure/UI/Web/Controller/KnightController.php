@@ -10,6 +10,7 @@ use Chess\Infrastructure\InfrastructureException;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Templating\EngineInterface;
 
 /**
  * Class KnightController
@@ -24,14 +25,22 @@ class KnightController
     private $getMinimumNumberOfMovesService;
 
     /**
+     * @var EngineInterface
+     */
+    private $templateEngine;
+
+    /**
      * KnightController constructor.
      *
-     * @param GetMinimumNumberOfMovesService $getMinimumNumberOfMovesService
+     * @param GetMinimumNumberOfMovesService $getMinimumNumberOfMovesService Get minimum number of Knight's moves service.
+     * @param EngineInterface                $templateEngine                 Template engine interface.
      */
     public function __construct(
-        GetMinimumNumberOfMovesService $getMinimumNumberOfMovesService
+        GetMinimumNumberOfMovesService $getMinimumNumberOfMovesService,
+        EngineInterface $templateEngine
     ) {
         $this->getMinimumNumberOfMovesService = $getMinimumNumberOfMovesService;
+        $this->templateEngine = $templateEngine;
     }
 
     /**
@@ -48,9 +57,6 @@ class KnightController
      */
     public function getNumberOfMoves(Request $request)
     {
-        ini_set('memory_limit', '2048M');
-        set_time_limit(0);
-
         $boardId = $request->query->get('boardId');
         $knightId = $request->query->get('knightId');
         $source = $request->query->getInt('source', 0);
@@ -66,6 +72,11 @@ class KnightController
             throw new InfrastructureException($exception->getMessage(), $exception->getCode(), $exception);
         }
 
-        return new Response($knightMovesDto->serialize());
+        return new Response(
+            $this->templateEngine->render(
+                '@web_views/knight-moves-solution.html.twig',
+                [ 'solution' => $knightMovesDto ]
+            )
+        );
     }
 }

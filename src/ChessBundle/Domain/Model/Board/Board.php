@@ -55,10 +55,12 @@ class Board
     /**
      * Makes the given move for Knight piece on chess board as possible.
      *
-     * @param Knight $knight     Knight piece.
-     * @param Move   $knightMove Knight move.
+     * @param Knight $knight Knight piece.
+     * @param Move $knightMove Knight move.
      *
      * @return bool
+     *
+     * @throws InvalidBoxException
      */
     public function moveTo(Knight $knight, Move $knightMove): bool
     {

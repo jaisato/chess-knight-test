@@ -2,7 +2,7 @@
 namespace Chess\Application;
 
 /**
- * Application exception.
+ * Domain exception.
  */
 class ApplicationException extends \Exception
 {

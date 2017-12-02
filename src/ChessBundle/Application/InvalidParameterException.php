@@ -4,7 +4,7 @@ namespace Chess\Application;
 
 /**
  * Class InvalidParameterException
- * @package Chess\Application
+ * @package Chess\Domain
  */
 class InvalidParameterException extends ApplicationException
 {

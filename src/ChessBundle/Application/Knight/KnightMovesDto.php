@@ -8,7 +8,7 @@ use Chess\Domain\Model\Knight\KnightId;
 /**
  * Knight moves DTO.
  *
- * @package Chess\Application\Knight
+ * @package Chess\Domain\Knight
  */
 class KnightMovesDto
 {
@@ -22,7 +22,7 @@ class KnightMovesDto
     public $destination;
 
     /** @var array */
-    public $positions;
+    public $moves;
 
     /** @var array */
     public $totalMoves;
@@ -30,25 +30,25 @@ class KnightMovesDto
     /**
      * KnightMovesDto constructor.
      *
-     * @param KnightId  $knightId      Knight identifier.
-     * @param Box       $source        Source box.
-     * @param Box       $destination   Destination box.
-     * @param array     $movesSolution Array of solutions.
+     * @param KnightId  $knightId        Knight identifier.
+     * @param Box       $source          Source box.
+     * @param Box       $destination     Destination box.
+     * @param array     $movesOfSolution Array of solutions.
      */
-    public function __construct(KnightId $knightId, Box $source, Box $destination, array $movesSolution)
+    public function __construct(KnightId $knightId, Box $source, Box $destination, array $movesOfSolution)
     {
         $this->knightId = $knightId->id();
         $this->source = $source->getOneDimensionValue();
         $this->destination = $destination->getOneDimensionValue();
 
-        $this->positions = array_map(
+        $this->moves = array_map(
             function (Box $move) {
-                return $move->getOneDimensionValue();
+                return "x: {$move->getX()} - y: {$move->getY()} ({$move->getOneDimensionValue()})";
             },
-            $movesSolution
+            $movesOfSolution
         );
 
-        $this->totalMoves = count($this->positions) - 1;
+        $this->totalMoves = count($this->moves);
     }
 
     /**

@@ -26,6 +26,15 @@ class PrintNewShortestPathFoundListener
             $event->solution()
         );
 
-        print_r("<div><h4>New solution:</h4><p>{$knightMovesDto->serialize()}</p></div>", false);
+        // The serialized DTO can contain user-supplied values (e.g. the knightId query
+        // parameter, which is not validated). Escape it before emitting raw HTML to avoid
+        // a reflected XSS vulnerability.
+        $safeContent = htmlspecialchars(
+            $knightMovesDto->serialize(),
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8'
+        );
+
+        echo "<div><h4>New solution:</h4><p>{$safeContent}</p></div>";
     }
 }

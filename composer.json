@@ -51,12 +51,24 @@
         ],
         "post-update-cmd": [
             "@symfony-scripts"
+        ],
+        "check-php": [
+            "@php bin/check-php-version.php"
+        ],
+        "pre-install-cmd": [
+            "@check-php"
+        ],
+        "pre-update-cmd": [
+            "@check-php"
         ]
     },
     "config": {
         "sort-packages": true,
         "platform": {
             "php": "7.2.5"
+        },
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
         }
     },
     "extra": {

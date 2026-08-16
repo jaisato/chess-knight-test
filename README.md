@@ -4,7 +4,15 @@ Chess knight's shortest path (Another Symfony project).
 It calculates the Knight's shortest path from source to destination box on chessboard (using backtracking algorithm).
 
 Instructions:
-- Requirements: Git, PHP 7.1, composer
+- Requirements: Git, **PHP >= 7.2.5 and < 8.0**, composer
+
+  The locked dependency set (Symfony 3.4, `doctrine/doctrine-cache-bundle`) does
+  not run on PHP 8. `composer.json` pins `config.platform.php` so the lock file
+  resolves reproducibly, which also means Composer validates against that
+  synthetic version rather than your interpreter - so a `composer install` on an
+  unsupported PHP would otherwise succeed and fail later. `bin/check-php-version.php`
+  runs on the real interpreter before install/update and stops that. See
+  `SECURITY.md`.
 - Clone repository: **git clone git@github.com:jaisato/chess-knight-test.git**
 - If you have composer globally installed execute *"composer install"*. Otherwise execute *"php composer.phar install"* to install project dependencies.
 - Run PHP server: **php bin/console server:run (or server:start)**

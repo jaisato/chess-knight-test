@@ -20,7 +20,7 @@
         ]
     },
     "require": {
-        "php": ">=7.1.3 <8.0",
+        "php": ">=7.2.5 <8.0",
         "doctrine/doctrine-bundle": "^1.6",
         "doctrine/orm": "^2.5",
         "incenteev/composer-parameter-handler": "^2.0",
@@ -30,7 +30,7 @@
         "symfony/monolog-bundle": "^3.1.0",
         "symfony/phpunit-bridge": "^4.0",
         "symfony/polyfill-apcu": "^1.0",
-        "symfony/swiftmailer-bundle": "^2.6.7",
+        "symfony/swiftmailer-bundle": "^3.0",
         "symfony/symfony": "^3.4.47",
         "twig/twig": "^2.15.3"
     },
@@ -56,7 +56,7 @@
     "config": {
         "sort-packages": true,
         "platform": {
-            "php": "7.1.3"
+            "php": "7.2.5"
         }
     },
     "extra": {

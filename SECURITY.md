@@ -87,11 +87,14 @@ Estrechar el rango declarado a cambio de cerrarlos es un intercambio razonable
 en un proyecto que de todas formas no es desplegable: PHP 7.1 dejó de recibir
 soporte en diciembre de 2019.
 
-7.1.3 es el suelo real del `composer.lock`, calculado como el mayor de los
-mínimos que declaran los paquetes bloqueados.
+**7.2.5 es el suelo real del `composer.lock`**, calculado como el mayor de los
+mínimos que declaran los paquetes bloqueados: `symfony/service-contracts`,
+`symfony/http-client`, `symfony/http-client-contracts` y `symfony/mime` exigen
+todos `>= 7.2.5`. Twig 2.16.1, que marcaba el suelo anterior de 7.1.3, ya no es
+el paquete más exigente.
 
 El **techo** hace falta por el mismo motivo, en el otro sentido. Sin `<8.0` un
-PHP 8.x quedaba declarado como soportado y, como `platform` finge un 7.1.3, la
+PHP 8.x quedaba declarado como soportado y, como `platform` finge un 7.2.5, la
 instalación se completaba sin avisar — pero el conjunto bloqueado no funciona
 ahí. `composer check-platform-reqs --lock` sobre PHP 8.4 lo confirma:
 

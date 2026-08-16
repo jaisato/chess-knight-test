@@ -31,13 +31,25 @@ y no es un cambio de dependencias.
 Mientras tanto conviene tratar este repositorio como lo que es: **código de
 2017, de una prueba técnica, no apto para exponer en producción.**
 
-## Plataforma fijada
+## Versión de PHP
 
-`composer.json` declara ahora `config.platform.php = 7.1.33`. Sin eso, la
-resolución depende del PHP de quien ejecute `composer`: en un PHP 8.4 moderno
-`composer update` falla porque los paquetes bloqueados declaran `^5.5.9|^7.0`.
-Fijarlo hace que el `composer.lock` sea reproducible en cualquier máquina, que
-es justo lo que se le pide a un lock.
+`composer.json` declara ahora:
+
+- `require.php = ">=7.1.3"`
+- `config.platform.php = "7.1.3"`
+
+Los dos coinciden **a propósito**. `platform` hace que Composer resuelva como si
+el intérprete fuese esa versión, así que si `require.php` admitiera menos que
+`platform` (declaraba `>=5.5.9`), una instalación sobre PHP 5.5–7.1.2 pasaría la
+verificación de plataforma y luego fallaría en ejecución: el conjunto bloqueado
+incluye Twig 2.16.1, que exige PHP >= 7.1.3.
+
+7.1.3 es el suelo real del `composer.lock`, calculado como el mayor de los
+mínimos que declaran los paquetes bloqueados.
+
+Fijar `platform` sigue haciendo falta para que el lock sea reproducible en
+cualquier máquina: sin ello la resolución depende del PHP de quien ejecute
+`composer`, y en un PHP 8.4 moderno `composer update` falla directamente.
 
 ## Paquetes abandonados
 

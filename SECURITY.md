@@ -35,7 +35,7 @@ Mientras tanto conviene tratar este repositorio como lo que es: **código de
 
 `composer.json` declara ahora:
 
-- `require.php = ">=7.1.3"`
+- `require.php = ">=7.1.3 <8.0"`
 - `config.platform.php = "7.1.3"`
 
 Los dos coinciden **a propósito**. `platform` hace que Composer resuelva como si
@@ -46,6 +46,18 @@ incluye Twig 2.16.1, que exige PHP >= 7.1.3.
 
 7.1.3 es el suelo real del `composer.lock`, calculado como el mayor de los
 mínimos que declaran los paquetes bloqueados.
+
+El **techo** hace falta por el mismo motivo, en el otro sentido. Sin `<8.0` un
+PHP 8.x quedaba declarado como soportado y, como `platform` finge un 7.1.3, la
+instalación se completaba sin avisar — pero el conjunto bloqueado no funciona
+ahí. `composer check-platform-reqs --lock` sobre PHP 8.4 lo confirma:
+
+```
+php   8.4.19   doctrine/doctrine-cache-bundle requires php (^7.1)   failed
+```
+
+El rango declarado coincide ahora con lo que el lock puede ejecutar realmente
+por los dos extremos.
 
 Fijar `platform` sigue haciendo falta para que el lock sea reproducible en
 cualquier máquina: sin ello la resolución depende del PHP de quien ejecute

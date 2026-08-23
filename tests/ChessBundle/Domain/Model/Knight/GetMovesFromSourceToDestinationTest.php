@@ -107,4 +107,71 @@ class GetMovesFromSourceToDestinationTest extends TestCase
 
         static::assertCount($expectedMoves, $this->getKnightMovesService->getMoves());
     }
+
+    /**
+     * The returned path has to be a path: every step a legal knight move, the
+     * first one reachable from the source, the last one the destination.
+     *
+     * Counting the moves says the answer is the right length but not that it
+     * describes a route the knight could take, so a search that returned the
+     * right number of arbitrary squares would have passed.
+     *
+     * @dataProvider knightsMinimumMovesFromSourceToDestinationDataProvider
+     *
+     * @param BoardId   $boardId       Board identifier.
+     * @param KnightId  $knightId      Knight identifier.
+     * @param Box       $source        Source box.
+     * @param Box       $destination   Destination box.
+     * @param int       $expectedMoves Expected moves.
+     *
+     * @throws InvalidBoxException
+     * @throws NotFoundBoardException
+     * @throws NotFoundKnightException
+     */
+    public function testTheReturnedSolutionIsAWalkableKnightPath(BoardId $boardId, KnightId $knightId, Box $source, Box $destination, int $expectedMoves)
+    {
+        $knight = new Knight($knightId);
+        $board = new Board($boardId);
+
+        $this->boardRepository
+            ->expects(static::any())
+            ->method('ofIdOrFail')
+            ->with(static::equalTo($boardId))
+            ->willReturn($board);
+
+        $this->knightRepository
+            ->expects(static::any())
+            ->method('ofIdOrFail')
+            ->with(static::equalTo($knightId))
+            ->willReturn($knight);
+
+        $this->getKnightMovesService->execute($boardId, $knightId, $source, $destination, []);
+
+        $path = $this->getKnightMovesService->getMoves();
+
+        static::assertNotEmpty($path, 'A reachable destination must produce a path.');
+        static::assertTrue(
+            $path[count($path) - 1]->equalsTo($destination),
+            'The path must end on the destination box.'
+        );
+
+        $previous = $source;
+        foreach ($path as $step) {
+            $dx = abs($step->getX() - $previous->getX());
+            $dy = abs($step->getY() - $previous->getY());
+
+            static::assertTrue(
+                ($dx === 1 && $dy === 2) || ($dx === 2 && $dy === 1),
+                sprintf(
+                    'Step from (%d,%d) to (%d,%d) is not a knight move.',
+                    $previous->getX(),
+                    $previous->getY(),
+                    $step->getX(),
+                    $step->getY()
+                )
+            );
+
+            $previous = $step;
+        }
+    }
 }

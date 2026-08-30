@@ -80,33 +80,83 @@ class GetMovesFromSourceToDestination
         $board = $this->boardRepository->ofIdOrFail($boardId);
         $knight = $this->knightRepository->ofIdOrFail($knightId);
 
-        $this->addToVisited($source);
-
-        if (!$this->canBeOptimal($solution)) {
-            return false;
-        }
+        // Every call starts from a clean slate. The two fields below are the
+        // whole state of the search, and leaving a previous run's optimum in
+        // place would let it prune - or be returned as - the answer to a
+        // different question.
+        $this->optimalSolution = null;
+        $this->visited = [];
 
         if ($source->equalsTo($destination)) {
-            $this->checkSolution($solution, $knightId, new Box(0), $destination);
+            $this->optimalSolution = $solution;
+            $this->publishNewSolution($knightId, $source, $destination, $solution);
+
             return true;
         }
 
-        foreach (Knight::getMoves() as $knightMove) {
-            $board->putAt($knight, $source);
+        // Breadth-first, not depth-first.
+        //
+        // The previous search walked every path the knight could take without
+        // repeating a square, keeping the shortest it had seen. On an 8x8 board
+        // that is a walk over self-avoiding paths - the count of those runs into
+        // the billions - and the "is this still shorter than the best so far"
+        // pruning only starts biting once a first solution exists, which depth
+        // first order reaches by wandering dozens of moves deep. The published
+        // answer was right; getting to it was not something you would wait for.
+        //
+        // Breadth-first visits squares in order of distance from the source, so
+        // the first time the destination comes off a move it is by definition on
+        // a shortest path: the search stops there, having touched each of the 64
+        // squares at most once. Marking a square on the way in rather than on
+        // the way out is what keeps it at most once - a square queued twice
+        // would be expanded twice, at the same depth, for the same answer.
+        $knightMoves = Knight::getMoves();
 
-            if ($board->checkCanMove($knight, $knightMove) && !$this->isVisited($source, $knightMove)) {
+        $queue = [['box' => $source, 'path' => $solution]];
+        $this->visited[$source->getOneDimensionValue()] = true;
+
+        // An index rather than array_shift(): shifting reindexes the whole
+        // queue on every dequeue.
+        for ($head = 0; $head < count($queue); $head++) {
+            /** @var Box $currentBox */
+            $currentBox = $queue[$head]['box'];
+            $currentPath = $queue[$head]['path'];
+
+            foreach ($knightMoves as $knightMove) {
+                $board->putAt($knight, $currentBox);
+
+                if (!$board->checkCanMove($knight, $knightMove)) {
+                    continue;
+                }
+
                 $board->moveTo($knight, $knightMove);
+                $nextBox = $board->getPosition($knight);
+                $nextKey = $nextBox->getOneDimensionValue();
 
-                $currentPosition = $board->getPosition($knight);
-                $solutionCopy = $this->addToSolution($solution, $currentPosition);
-                $this->addToVisited($currentPosition);
+                if (isset($this->visited[$nextKey])) {
+                    continue;
+                }
 
-                $this->execute($boardId, $knightId, $currentPosition, $destination, $solutionCopy);
+                $this->visited[$nextKey] = true;
+                $nextPath = $this->addToSolution($currentPath, $nextBox);
 
-                $this->removeFromVisited($currentPosition);
+                if ($nextBox->equalsTo($destination)) {
+                    $this->optimalSolution = $nextPath;
+                    // The real source, not new Box(0): the event carries the
+                    // endpoints of the path it announces, and the old call
+                    // reported square 0 for every search.
+                    $this->publishNewSolution($knightId, $source, $destination, $nextPath);
+
+                    return true;
+                }
+
+                $queue[] = ['box' => $nextBox, 'path' => $nextPath];
             }
         }
 
+        // Unreachable on a standard board - every square is reachable from every
+        // other - but a board whose dimensions made one unreachable would land
+        // here rather than looping.
         return false;
     }
 
@@ -118,59 +168,6 @@ class GetMovesFromSourceToDestination
     public function getMoves()
     {
         return $this->optimalSolution;
-    }
-
-    /**
-     * Checks if box position already visited at given path.
-     *
-     * @param Box $source Source position.
-     * @param Move $knightMove Knight move.
-     *
-     * @return bool
-     *
-     * @throws InvalidBoxException
-     */
-    private function isVisited(Box $source, Move $knightMove)
-    {
-        $checkingBox = Box::createFromXYPosition(
-            $source->getX() + $knightMove->getX(),
-            $source->getY() + $knightMove->getY()
-        );
-
-        reset($this->visited);
-        foreach ($this->visited as $box) {
-            if ($checkingBox->equalsTo($box)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Add position to list of visited.
-     *
-     * @param Box $position Visited position
-     */
-    private function addToVisited(Box $position)
-    {
-        $this->visited[] = $position;
-    }
-
-    /**
-     * Removes position from list of visited.
-     *
-     * @param Box $position Position to remove from visited.
-     */
-    private function removeFromVisited(Box $position)
-    {
-        reset($this->visited);
-
-        foreach ($this->visited as $index => $visitedBox) {
-            if ($visitedBox->equalsTo($position)) {
-                unset($this->visited[$index]);
-            }
-        }
     }
 
     /**
@@ -186,34 +183,6 @@ class GetMovesFromSourceToDestination
         $solution[] = $source;
 
         return $solution;
-    }
-
-    /**
-     * Checks if it's the current optimal solution.
-     *
-     * @param array    $solution    Current solution.
-     * @param KnightId $knightId    Knight id.
-     * @param Box      $source      Source position.
-     * @param Box      $destination Destination position.
-     */
-    private function checkSolution(array $solution, KnightId $knightId, Box $source, Box $destination)
-    {
-        if ($this->canBeOptimal($solution)) {
-            $this->optimalSolution = $solution;
-            $this->publishNewSolution($knightId, $source, $destination, $solution);
-        }
-    }
-
-    /**
-     * Check if current solution still is optimal.
-     *
-     * @param array $solution Current solution.
-     *
-     * @return bool
-     */
-    private function canBeOptimal(array $solution)
-    {
-        return $this->optimalSolution === null || count($this->optimalSolution) > count($solution);
     }
 
     /**

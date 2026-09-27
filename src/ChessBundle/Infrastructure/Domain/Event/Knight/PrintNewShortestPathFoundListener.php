@@ -26,6 +26,10 @@ class PrintNewShortestPathFoundListener
             $event->solution()
         );
 
-        print_r("<div><h4>New solution:</h4><p>{$knightMovesDto->serialize()}</p></div>", false);
+        // Printed straight into the response, outside Twig's auto-escaping:
+        // the knight id in the payload can come from the query string.
+        $payload = htmlspecialchars((string) $knightMovesDto->serialize(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        print_r("<div><h4>New solution:</h4><p>{$payload}</p></div>", false);
     }
 }

@@ -23,4 +23,16 @@ class KnightControllerTest extends WebTestCase
         $this->assertEquals(200, $client->getResponse()->getStatusCode());
         $this->assertContains('"totalMoves":6', $crawler->filter('#content b')->text());
     }
+
+    /**
+     * An off-board square is a client error, not a server error.
+     */
+    public function testOffBoardSourceIsABadRequest()
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/', ['source' => 64, 'destination' => 63]);
+
+        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+    }
 }

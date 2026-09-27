@@ -85,8 +85,8 @@ class Box
     {
         if (!self::assertXPositionIsValid($xPosition) || !self::assertYPositionIsValid($yPosition)) {
             throw new InvalidBoxException(
-                'X-axis value must be between 0 and ' . Board::NUMBER_OF_ROWS .
-                '. Y-axis value must be between 0 and ' . Board::NUMBER_OF_COLUMNS
+                'X-axis value must be between 0 and ' . (Board::NUMBER_OF_COLUMNS - 1) .
+                '. Y-axis value must be between 0 and ' . (Board::NUMBER_OF_ROWS - 1)
             );
         }
     }

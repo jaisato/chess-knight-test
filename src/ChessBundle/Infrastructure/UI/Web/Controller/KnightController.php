@@ -10,6 +10,7 @@ use Chess\Infrastructure\InfrastructureException;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Templating\EngineInterface;
 
 /**
@@ -52,7 +53,7 @@ class KnightController
      *
      * @return Response
      *
-     * @throws InvalidArgumentException
+     * @throws BadRequestHttpException
      * @throws InfrastructureException
      */
     public function getNumberOfMoves(Request $request)
@@ -67,7 +68,9 @@ class KnightController
                 new GetMinimumNumberOfMovesRequest($boardId, $knightId, $source, $destination)
             );
         } catch (InvalidParameterException $exception) {
-            throw new InvalidArgumentException($exception->getMessage(), $exception->getCode(), $exception);
+            // A client error: answer 400 instead of letting a plain \Exception
+            // surface as a 500.
+            throw new BadRequestHttpException($exception->getMessage(), $exception);
         } catch (ApplicationException $exception) {
             throw new InfrastructureException($exception->getMessage(), $exception->getCode(), $exception);
         }

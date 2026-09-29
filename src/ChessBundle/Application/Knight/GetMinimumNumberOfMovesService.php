@@ -75,6 +75,11 @@ class GetMinimumNumberOfMovesService
             $destinationBox = new Box($request->destination);
         } catch (InvalidBoardIdException|InvalidKnightIdException $exception) {
             throw new InvalidParameterException("Invalid knight id or board id", $exception->getCode(), $exception);
+        } catch (InvalidBoxException $exception) {
+            // `source` and `destination` come straight from the query string:
+            // an off-board square is bad input, not an application failure,
+            // and it used to escape this method as a raw domain exception.
+            throw new InvalidParameterException("Invalid source or destination box", $exception->getCode(), $exception);
         }
 
         try {

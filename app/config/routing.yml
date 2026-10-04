@@ -1,3 +1,0 @@
-app:
-    resource: '../../src/ChessBundle/Infrastructure/UI/Web/Controller'
-    type: annotation

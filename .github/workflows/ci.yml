@@ -1,0 +1,34 @@
+# CI: composer validate --strict, php -l en PHP 8.4 y 8.5, php-cs-fixer, PHPStan,
+# lint:container, lint:yaml y lint:twig, la suite con cobertura mínima del 80 % y
+# composer audit: todo lo ejecuta el workflow reutilizable de jaisato/.github.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: PHP
+    uses: jaisato/.github/.github/workflows/symfony-ci.yml@main
+    with:
+      # composer.json pide >=8.4: php -l y la suite corren en 8.4 y 8.5; las
+      # herramientas, en 8.4 (PHPStan analiza para 8.4 por phpVersion).
+      php-versions: '["8.4", "8.5"]'
+      tools-php-version: "8.4"
+      extensions: intl, mbstring, zip
+      # phpstan-symfony lee el XML del contenedor de dev (lo mismo que composer stan).
+      pre-analysis-command: php bin/console cache:warmup --env=dev --no-interaction
+      # lint:container, lint:yaml --parse-tags y lint:twig.
+      extra-lint-command: composer lint
+      # Sin base de datos: los repositorios viven en memoria.
+      mysql: false
+      coverage-min: 80

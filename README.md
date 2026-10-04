@@ -34,11 +34,14 @@ Parámetros del query string, todos opcionales:
 Respuestas:
 
 - **200** con la solución.
-- **400** si una casilla está fuera del tablero o no es un entero, o si un id
-  llega como array (`?knightId[]=x`).
+- **400** si una casilla está fuera del tablero o no es un entero decimal sin
+  ceros a la izquierda (`abc`, `05`, `1.0` o `0x1F`, por ejemplo); un valor
+  vacío también da 400. Lo mismo si una casilla o un id llegan como array
+  (`?source[]=1`, `?knightId[]=x`).
 - **404** si `boardId` o `knightId` no existen. Los repositorios viven en
   memoria y duran lo que dura la petición, así que un id inventado siempre
   responde 404.
+- **405** para métodos distintos de GET y HEAD.
 
 ## Arquitectura
 
@@ -88,4 +91,6 @@ el bundle `ChessBundle` pasó a ser `src/`, y Doctrine, Swiftmailer, la
 configuración de seguridad y los bundles `sensio/*`, que la aplicación no
 usaba, se quedaron fuera.
 
-La última versión sobre Symfony 3.4 es el commit `7ff5835`.
+La última versión sobre Symfony 3.4 es el commit `7ff5835`. Aquella versión
+convertía a entero cualquier casilla (`abc` era la 0 y `05`, la 5) y respondía
+a cualquier método; ahora esas peticiones dan 400 y 405.

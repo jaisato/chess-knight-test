@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Chess\Tests\Infrastructure\UI\Web\Controller;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -11,6 +12,38 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  */
 final class KnightControllerTest extends WebTestCase
 {
+    /**
+     * Squares that InputBag::getInt() refuses: its FILTER_VALIDATE_INT only
+     * takes a decimal integer without leading zeros. Symfony 3 cast any of
+     * them to int and answered 200 (`abc`, `''` and `0x1F` were square 0,
+     * `05` square 5, `[1]` square 1).
+     *
+     * @return iterable<string, array{array<string, string|list<string>>}>
+     */
+    public static function malformedSquareProvider(): iterable
+    {
+        yield 'source that is not a number' => [['source' => 'abc']];
+        yield 'empty source' => [['source' => '']];
+        yield 'source with a leading zero' => [['source' => '05']];
+        yield 'decimal source' => [['source' => '1.0']];
+        yield 'source in exponent notation' => [['source' => '1e1']];
+        yield 'hexadecimal source' => [['source' => '0x1F']];
+        yield 'source as an array' => [['source' => ['1']]];
+        yield 'empty destination' => [['destination' => '']];
+        yield 'decimal destination' => [['destination' => '1.5']];
+        yield 'destination as an array' => [['destination' => ['1']]];
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function notAllowedMethodProvider(): iterable
+    {
+        foreach (['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] as $method) {
+            yield $method => [$method];
+        }
+    }
+
     /**
      * Test Knight' controller action GetNumberOfMoves.
      */
@@ -37,16 +70,42 @@ final class KnightControllerTest extends WebTestCase
     }
 
     /**
-     * A square that is not an integer is a client error too. Symfony 3 read
-     * `?source=abc` as square 0; InputBag::getInt() now refuses it.
+     * A square that is not a decimal integer without leading zeros is a
+     * client error too, and so is an empty one.
+     *
+     * @param array<string, string|list<string>> $query
      */
-    public function testNonIntegerSourceIsABadRequest(): void
+    #[DataProvider('malformedSquareProvider')]
+    public function testMalformedSquareIsABadRequest(array $query): void
     {
         $client = static::createClient();
 
-        $client->request('GET', '/?source=abc&destination=63');
+        $client->request('GET', '/', $query + ['source' => '0', 'destination' => '63']);
 
         static::assertResponseStatusCodeSame(400);
+    }
+
+    /**
+     * The route only answers GET, and HEAD, which the router matches as GET.
+     * Symfony 3 answered any method with the solution.
+     */
+    #[DataProvider('notAllowedMethodProvider')]
+    public function testOtherMethodsAreNotAllowed(string $method): void
+    {
+        $client = static::createClient();
+
+        $client->request($method, '/?source=0&destination=63');
+
+        static::assertResponseStatusCodeSame(405);
+    }
+
+    public function testHeadIsAnsweredLikeGet(): void
+    {
+        $client = static::createClient();
+
+        $client->request('HEAD', '/?source=0&destination=63');
+
+        static::assertResponseStatusCodeSame(200);
     }
 
     /**

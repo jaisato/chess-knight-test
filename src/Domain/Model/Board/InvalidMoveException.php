@@ -1,0 +1,12 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Chess\Domain\Model\Board;
+
+use Chess\Domain\DomainException;
+
+/**
+ * A move whose source and destination are the same box.
+ */
+class InvalidMoveException extends DomainException {}

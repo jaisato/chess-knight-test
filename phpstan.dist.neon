@@ -1,0 +1,19 @@
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-symfony/rules.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+    - vendor/phpstan/phpstan-phpunit/rules.neon
+
+parameters:
+    level: max
+    # The oldest PHP composer.json accepts, not the one this machine happens to run.
+    phpVersion: 80400
+    paths:
+        - src
+        - tests
+    tmpDir: var/cache/phpstan
+    symfony:
+        # Dumped by `bin/console cache:warmup --env=dev` (debug kernels write it).
+        # The extension refuses to run without it, which is why `composer stan`
+        # warms the cache first.
+        containerXmlPath: var/cache/dev/Chess_KernelDevDebugContainer.xml

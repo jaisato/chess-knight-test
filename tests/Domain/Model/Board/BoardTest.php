@@ -1,0 +1,49 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Chess\Tests\Domain\Model\Board;
+
+use Chess\Domain\Model\Board\Board;
+use Chess\Domain\Model\Board\BoardId;
+use Chess\Domain\Model\Board\Box;
+use Chess\Domain\Model\Knight\Knight;
+use Chess\Domain\Model\Knight\KnightId;
+use Chess\Domain\Model\Knight\Move;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * Tests of the Board entity.
+ */
+final class BoardTest extends TestCase
+{
+    /**
+     * A knight that was never put on the board has no position and cannot move.
+     */
+    public function testKnightNotOnBoardHasNoPositionAndCannotMove(): void
+    {
+        $board = new Board(new BoardId('board'));
+        $knight = new Knight(new KnightId('knight'));
+        $move = new Move(Move::X_PLUS_1, Move::Y_PLUS_2);
+
+        static::assertNull($board->getPosition($knight));
+        static::assertFalse($board->checkCanMove($knight, $move));
+        static::assertFalse($board->moveTo($knight, $move));
+    }
+
+    /**
+     * A placed knight moves to the expected square.
+     */
+    public function testPlacedKnightMoves(): void
+    {
+        $board = new Board(new BoardId('board'));
+        $knight = new Knight(new KnightId('knight'));
+        $board->putAt($knight, new Box(0));
+
+        static::assertTrue($board->moveTo($knight, new Move(Move::X_PLUS_1, Move::Y_PLUS_2)));
+
+        $position = $board->getPosition($knight);
+        static::assertNotNull($position);
+        static::assertSame(17, $position->getOneDimensionValue());
+    }
+}

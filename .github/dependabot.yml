@@ -1,0 +1,38 @@
+# Una PR semanal por ecosistema: las dependencias de Composer (composer.lock) y
+# las acciones ancladas por SHA en .github/workflows/*.yml (Dependabot actualiza
+# el SHA y el comentario con la versión a la vez, como en jaisato/.github).
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Madrid
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # Las versiones mayores (PHPUnit 13, por ejemplo) llegan en PRs sueltas:
+      # suelen pedir cambios en el código.
+      composer:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # Symfony se queda en la LTS 7.4, que recibe parches de seguridad hasta
+      # noviembre de 2029: pasar a 8.x es una migración, no una actualización.
+      - dependency-name: "symfony/*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Madrid
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns: ["*"]

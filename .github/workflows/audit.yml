@@ -1,0 +1,44 @@
+name: Auditoría de dependencias
+
+# Avisos conocidos contra lo que fija composer.lock. En cada push y pull request
+# hace la misma comprobación el job `composer audit` del workflow reutilizable
+# que llama ci.yml; este workflow es la pasada semanal (y la manual): un aviso
+# publicado contra una versión que el lock ya trae llega sin ningún commit, y
+# solo una ejecución programada se pone en rojo por él.
+#
+# GitHub desactiva los workflows programados de un repositorio público que pasa
+# 60 días sin actividad y avisa por correo al propietario; se reactivan desde la
+# pestaña Actions.
+on:
+  schedule:
+    - cron: '17 6 * * 1' # lunes, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  composer:
+    name: composer audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      # --locked lee composer.lock sin instalar nada. Un paquete abandonado se
+      # informa pero no hace fallar el job: es una señal de mantenimiento, no un
+      # aviso de seguridad.
+      - name: Auditar las dependencias bloqueadas
+        run: composer audit --locked --abandoned=report

@@ -93,7 +93,8 @@
             "@cs",
             "@stan",
             "@lint",
-            "@test"
+            "@test",
+            "@composer audit --locked --abandoned=report"
         ]
     },
     "scripts-descriptions": {
@@ -104,7 +105,7 @@
         "cs": "Comprueba el estilo sin tocar ficheros",
         "cs:fix": "Corrige el estilo",
         "lint": "Lint del contenedor, de la configuración YAML y de las plantillas Twig",
-        "check": "Todo lo que ejecuta el CI, en orden"
+        "check": "Lo que ejecuta el CI, en orden y con el PHP local, salvo el umbral de cobertura: ese solo lo aplica el CI, porque necesita pcov o xdebug"
     },
     "conflict": {
         "symfony/symfony": "*"

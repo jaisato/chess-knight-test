@@ -66,12 +66,16 @@ templates/           Plantillas Twig
 ## Calidad
 
 ```bash
-composer check          # todo lo que ejecuta el CI, en orden
+composer check          # lo que ejecuta el CI, en orden, salvo el umbral de cobertura
 composer test           # PHPUnit 12: suites unit y functional
 composer stan           # PHPStan, nivel max
 composer cs             # php-cs-fixer en modo comprobación (cs:fix corrige)
 composer lint           # lint del contenedor, de la configuración YAML y de Twig
 ```
+
+`composer check` ejecuta `composer validate --strict`, php-cs-fixer, PHPStan,
+los lints, la suite y `composer audit`, con el PHP que tengas instalado. El
+umbral de cobertura solo lo aplica el CI, porque necesita pcov o xdebug.
 
 El CI (`.github/workflows/ci.yml`) usa el workflow reutilizable
 [`symfony-ci`](https://github.com/jaisato/.github) de `jaisato/.github`:

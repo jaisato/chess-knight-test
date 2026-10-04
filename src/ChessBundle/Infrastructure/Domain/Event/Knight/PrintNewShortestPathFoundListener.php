@@ -4,6 +4,7 @@ namespace Chess\Infrastructure\Domain\Event\Knight;
 
 use Chess\Application\Knight\KnightMovesDto;
 use Chess\Domain\Event\Knight\NewShortestPathFound;
+use Psr\Log\LoggerInterface;
 
 /**
  * Event listener for NewShortestPathFound event.
@@ -12,8 +13,29 @@ use Chess\Domain\Event\Knight\NewShortestPathFound;
  */
 class PrintNewShortestPathFoundListener
 {
+    /** @var LoggerInterface */
+    private $logger;
+
+    /**
+     * PrintNewShortestPathFoundListener constructor.
+     *
+     * @param LoggerInterface $logger Logger.
+     */
+    public function __construct(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
     /**
      * Handles the events.
+     *
+     * The solution used to be print_r()'d from here. The listener runs while
+     * the controller is still building its Response, so that output reached
+     * the client before Symfony had sent the status line and headers: PHP
+     * flushed its own defaults, Response::sendHeaders() then found
+     * headers_sent() and silently dropped every header of the real response,
+     * and the markup landed in front of the page's doctype. The page itself
+     * already renders the solution, so the event is recorded in the log.
      *
      * @param NewShortestPathFound $event Event to be handled.
      */
@@ -26,10 +48,9 @@ class PrintNewShortestPathFoundListener
             $event->solution()
         );
 
-        // Printed straight into the response, outside Twig's auto-escaping:
-        // the knight id in the payload can come from the query string.
-        $payload = htmlspecialchars((string) $knightMovesDto->serialize(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        print_r("<div><h4>New solution:</h4><p>{$payload}</p></div>", false);
+        $this->logger->info('New shortest path found for knight {knightId}: {solution}', [
+            'knightId' => $knightMovesDto->knightId,
+            'solution' => $knightMovesDto->serialize(),
+        ]);
     }
 }

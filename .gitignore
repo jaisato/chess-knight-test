@@ -18,3 +18,8 @@
 /phpunit.xml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
+
+# Symfony 7.4 lo regenera al compilar el contenedor con debug (dev y test) y
+# solo sirve de ayuda al IDE: la configuración es YAML y prod ni lo lee ni lo
+# genera.
+/config/reference.php

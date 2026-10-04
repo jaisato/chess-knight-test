@@ -35,4 +35,44 @@ class KnightControllerTest extends WebTestCase
 
         $this->assertEquals(400, $client->getResponse()->getStatusCode());
     }
+
+    /**
+     * A board id the client names but that does not exist is a 404, not a 500.
+     */
+    public function testUnknownBoardIdIsNotFound()
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/', ['boardId' => 'no-such-board', 'source' => 0, 'destination' => 63]);
+
+        $this->assertEquals(404, $client->getResponse()->getStatusCode());
+    }
+
+    /**
+     * `?knightId[]=x` is malformed input: 400, not a TypeError surfacing as 500.
+     */
+    public function testArrayKnightIdIsABadRequest()
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/', ['knightId' => ['x'], 'source' => 0, 'destination' => 63]);
+
+        $this->assertEquals(400, $client->getResponse()->getStatusCode());
+    }
+
+    /**
+     * Nothing may be written to the output ahead of the response: it would
+     * send PHP's default headers first and the response's own would be lost.
+     */
+    public function testSolutionIsNotPrintedOutsideTheResponse()
+    {
+        $client = static::createClient();
+
+        ob_start();
+        $client->request('GET', '/', ['source' => 0, 'destination' => 63]);
+        $printed = ob_get_clean();
+
+        $this->assertSame('', $printed);
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+    }
 }

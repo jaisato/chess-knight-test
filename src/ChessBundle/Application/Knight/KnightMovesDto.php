@@ -58,6 +58,9 @@ class KnightMovesDto
      */
     public function serialize()
     {
-        return json_encode($this);
+        // The knight id can come from the query string. Without the flag a
+        // single invalid UTF-8 byte in it makes json_encode() return false,
+        // and the page showed an empty solution.
+        return json_encode($this, JSON_INVALID_UTF8_SUBSTITUTE);
     }
 }

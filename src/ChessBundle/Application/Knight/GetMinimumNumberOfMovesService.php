@@ -4,6 +4,7 @@ namespace Chess\Application\Knight;
 
 use Chess\Application\ApplicationException;
 use Chess\Application\InvalidParameterException;
+use Chess\Application\NotFoundException;
 use Chess\Domain\Model\Board\Board;
 use Chess\Domain\Model\Board\BoardId;
 use Chess\Domain\Model\Board\BoardRepository;
@@ -65,6 +66,7 @@ class GetMinimumNumberOfMovesService
      *
      * @throws ApplicationException
      * @throws InvalidParameterException
+     * @throws NotFoundException
      */
     public function execute(GetMinimumNumberOfMovesRequest $request): KnightMovesDto
     {
@@ -91,7 +93,9 @@ class GetMinimumNumberOfMovesService
 
             $getMovesService->execute($boardId, $knightId, $sourceBox, $destinationBox, []);
         } catch (NotFoundBoardException|NotFoundKnightException $exception) {
-            throw new ApplicationException("Board or knight not found", $exception->getCode(), $exception);
+            // Only reachable when the caller passed a boardId/knightId of its
+            // own: a missing entity it named is a "not found", not a failure.
+            throw new NotFoundException("Board or knight not found", $exception->getCode(), $exception);
         } catch (InvalidBoxException $exception) {
             throw new ApplicationException("Board box is invalid", $exception->getCode(), $exception);
         }

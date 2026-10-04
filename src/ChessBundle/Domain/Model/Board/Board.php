@@ -19,8 +19,8 @@ class Board
     /** @var BoardId */
     private $boardId;
 
-    /** @var Box[] Current position */
-    private $position;
+    /** @var Box[] Current position of each knight, by knight id */
+    private $position = [];
 
     /**
      * Board constructor.
@@ -113,7 +113,10 @@ class Board
      */
     public function getPosition(Knight $knight): ?Box
     {
-        return $this->position[$knight->id()->id()];
+        // A knight that was never put on the board has no position: answer
+        // null as documented rather than raise an undefined-index notice
+        // (which Symfony's debug error handler turns into an exception).
+        return $this->position[$knight->id()->id()] ?? null;
     }
 
     /**

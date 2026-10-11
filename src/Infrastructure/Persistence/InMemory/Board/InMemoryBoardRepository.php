@@ -15,18 +15,16 @@ use Ramsey\Uuid\Uuid;
  */
 class InMemoryBoardRepository implements BoardRepository
 {
-    /** @var array<int, Board> */
+    /**
+     * Keyed by id: one board per identity, found without walking the list.
+     *
+     * @var array<string, Board>
+     */
     private array $boards = [];
 
     public function ofId(BoardId $boardId): ?Board
     {
-        foreach ($this->boards as $aBoard) {
-            if ($aBoard->id()->id() === $boardId->id()) {
-                return $aBoard;
-            }
-        }
-
-        return null;
+        return $this->boards[$boardId->id()] ?? null;
     }
 
     public function ofIdOrFail(BoardId $boardId): Board
@@ -39,28 +37,20 @@ class InMemoryBoardRepository implements BoardRepository
         return new BoardId(Uuid::uuid4()->toString());
     }
 
+    /**
+     * Adding an identity that is already tracked keeps the tracked board and
+     * hands it back, so the caller goes on working with the instance the
+     * repository holds. It used to answer the argument instead: a second
+     * instance with the same id that nothing would ever find again.
+     */
     public function add(Board $board): Board
     {
-        foreach ($this->boards as $aBoard) {
-            if ($aBoard->id()->id() === $board->id()->id()) {
-                return $board;
-            }
-        }
-
-        $this->boards[] = $board;
-
-        return $board;
+        return $this->boards[$board->id()->id()] ??= $board;
     }
 
     public function remove(Board $board): Board
     {
-        foreach ($this->boards as $index => $aBoard) {
-            if ($aBoard->id()->id() === $board->id()->id()) {
-                unset($this->boards[$index]);
-
-                return $board;
-            }
-        }
+        unset($this->boards[$board->id()->id()]);
 
         return $board;
     }

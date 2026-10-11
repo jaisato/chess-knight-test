@@ -24,11 +24,12 @@
     </php>
 
     <testsuites>
-        <!-- Domain, application and the listener: plain objects, no kernel. -->
+        <!-- Domain, application, the listener and the in-memory repositories: plain objects, no kernel. -->
         <testsuite name="unit">
             <directory>tests/Domain</directory>
             <directory>tests/Application</directory>
             <directory>tests/Infrastructure/Domain</directory>
+            <directory>tests/Infrastructure/Persistence</directory>
         </testsuite>
         <!-- The controller through the kernel (WebTestCase). -->
         <testsuite name="functional">

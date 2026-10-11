@@ -15,18 +15,16 @@ use Ramsey\Uuid\Uuid;
  */
 class InMemoryKnightRepository implements KnightRepository
 {
-    /** @var array<int, Knight> */
+    /**
+     * Keyed by id: one knight per identity, found without walking the list.
+     *
+     * @var array<string, Knight>
+     */
     private array $knights = [];
 
     public function ofId(KnightId $knightId): ?Knight
     {
-        foreach ($this->knights as $aKnight) {
-            if ($aKnight->id()->id() === $knightId->id()) {
-                return $aKnight;
-            }
-        }
-
-        return null;
+        return $this->knights[$knightId->id()] ?? null;
     }
 
     public function ofIdOrFail(KnightId $knightId): Knight
@@ -39,28 +37,20 @@ class InMemoryKnightRepository implements KnightRepository
         return new KnightId(Uuid::uuid4()->toString());
     }
 
+    /**
+     * Adding an identity that is already tracked keeps the tracked knight and
+     * hands it back, so the caller goes on working with the instance the
+     * repository holds. It used to answer the argument instead: a second
+     * instance with the same id that nothing would ever find again.
+     */
     public function add(Knight $knight): Knight
     {
-        foreach ($this->knights as $aKnight) {
-            if ($aKnight->id()->id() === $knight->id()->id()) {
-                return $knight;
-            }
-        }
-
-        $this->knights[] = $knight;
-
-        return $knight;
+        return $this->knights[$knight->id()->id()] ??= $knight;
     }
 
     public function remove(Knight $knight): Knight
     {
-        foreach ($this->knights as $index => $aKnight) {
-            if ($aKnight->id()->id() === $knight->id()->id()) {
-                unset($this->knights[$index]);
-
-                return $knight;
-            }
-        }
+        unset($this->knights[$knight->id()->id()]);
 
         return $knight;
     }

@@ -115,7 +115,7 @@ final class KnightControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $client->request('GET', '/', ['boardId' => 'no-such-board', 'source' => 0, 'destination' => 63]);
+        $client->request('GET', '/', ['boardId' => '00000000-0000-4000-8000-000000000001', 'source' => 0, 'destination' => 63]);
 
         static::assertResponseStatusCodeSame(404);
     }
@@ -127,9 +127,33 @@ final class KnightControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $client->request('GET', '/', ['knightId' => 'no-such-knight', 'source' => 0, 'destination' => 63]);
+        $client->request('GET', '/', ['knightId' => '00000000-0000-4000-8000-000000000002', 'source' => 0, 'destination' => 63]);
 
         static::assertResponseStatusCodeSame(404);
+    }
+
+    /**
+     * The repositories only mint UUIDs: an id in any other shape cannot name
+     * an entity, so it is a malformed request (400), not a missing one (404).
+     *
+     * @return iterable<string, array{string, string}>
+     */
+    public static function malformedIds(): iterable
+    {
+        yield 'empty board id' => ['boardId', ''];
+        yield 'free-text board id' => ['boardId', 'no-such-board'];
+        yield 'empty knight id' => ['knightId', ''];
+        yield 'oversized knight id' => ['knightId', str_repeat('a', 4096)];
+    }
+
+    #[DataProvider('malformedIds')]
+    public function testMalformedIdIsABadRequest(string $parameter, string $value): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/', [$parameter => $value, 'source' => 0, 'destination' => 63]);
+
+        static::assertResponseStatusCodeSame(400);
     }
 
     /**

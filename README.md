@@ -37,10 +37,12 @@ Respuestas:
 - **400** si una casilla está fuera del tablero o no es un entero decimal sin
   ceros a la izquierda (`abc`, `05`, `1.0` o `0x1F`, por ejemplo); un valor
   vacío también da 400. Lo mismo si una casilla o un id llegan como array
-  (`?source[]=1`, `?knightId[]=x`).
-- **404** si `boardId` o `knightId` no existen. Los repositorios viven en
-  memoria y duran lo que dura la petición, así que un id inventado siempre
-  responde 404.
+  (`?source[]=1`, `?knightId[]=x`), o si `boardId`/`knightId` no tienen forma
+  de UUID (los repositorios solo generan UUID, así que otro valor no puede
+  nombrar nada).
+- **404** si `boardId` o `knightId` son UUID que no existen. Los repositorios
+  viven en memoria y duran lo que dura la petición, así que un id inventado
+  siempre responde 404.
 - **405** para métodos distintos de GET y HEAD.
 
 ## Arquitectura

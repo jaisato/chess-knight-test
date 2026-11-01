@@ -20,6 +20,7 @@ use Chess\Domain\Model\Knight\Knight;
 use Chess\Domain\Model\Knight\KnightId;
 use Chess\Domain\Model\Knight\KnightRepository;
 use Chess\Domain\Model\Knight\NotFoundKnightException;
+use Ramsey\Uuid\Uuid;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -88,6 +89,10 @@ class GetMinimumNumberOfMovesService
     private function getBoardId(?string $boardId): BoardId
     {
         if (null !== $boardId) {
+            if (!self::isAnIdentity($boardId)) {
+                throw new InvalidBoardIdException('The board id must be a UUID');
+            }
+
             return new BoardId($boardId);
         }
 
@@ -103,9 +108,27 @@ class GetMinimumNumberOfMovesService
     private function getKnightId(?string $knightId): KnightId
     {
         if (null !== $knightId) {
+            if (!self::isAnIdentity($knightId)) {
+                throw new InvalidKnightIdException('The knight id must be a UUID');
+            }
+
             return new KnightId($knightId);
         }
 
         return $this->knightRepository->add(new Knight($this->knightRepository->newIdentity()))->id();
+    }
+
+    /**
+     * Whether an id from the query string can name an entity at all.
+     *
+     * The repositories only ever mint UUIDs (newIdentity()), so anything else
+     * - an empty `?boardId=`, a few kilobytes of text - names nothing by
+     * construction. It used to be wrapped as-is and looked up, answering 404
+     * for what is malformed input, and the "invalid id" branch of execute()
+     * was unreachable: nothing ever threw the exceptions it catches.
+     */
+    private static function isAnIdentity(string $id): bool
+    {
+        return Uuid::isValid($id);
     }
 }

@@ -26,6 +26,9 @@ updates:
       # sus versiones mayores sí llegan, en PRs sueltas. dependency-name no
       # admite negaciones, así que la lista va paquete a paquete: hay que
       # mantenerla al día cuando composer.json gane o pierda un symfony/*.
+      # Los componentes que esos paquetes arrastran (http-kernel, routing, cache...) se
+      # quedan en la 7.4 por los `conflict` de composer.json: Dependabot ejecuta Composer
+      # sin plugins y no aplica extra.symfony.require, así que sin ellos los subía a la 8.0.
       - dependency-name: "symfony/asset"
         update-types: ["version-update:semver-major"]
       - dependency-name: "symfony/browser-kit"
